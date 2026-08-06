@@ -1,0 +1,116 @@
+import { useState } from 'react';
+import { DIAS_SEMANA, BLOQUES_HORAS } from '@/utils/constantes';
+import { useHorarioStore } from '@/store/useHorarioStore';
+import { ModalAsignatura } from './ModalAsignatura';
+import type { ColorAsignatura } from '@/types';
+
+const MAPA_COLORES: Record<ColorAsignatura, string> = {
+  blue: 'bg-blue-950/70 text-blue-200 border-blue-500/40 hover:border-blue-400',
+  emerald: 'bg-emerald-950/70 text-emerald-200 border-emerald-500/40 hover:border-emerald-400',
+  purple: 'bg-purple-950/70 text-purple-200 border-purple-500/40 hover:border-purple-400',
+  amber: 'bg-amber-950/70 text-amber-200 border-amber-500/40 hover:border-amber-400',
+  rose: 'bg-rose-950/70 text-rose-200 border-rose-500/40 hover:border-rose-400',
+  indigo: 'bg-indigo-950/70 text-indigo-200 border-indigo-500/40 hover:border-indigo-400',
+  cyan: 'bg-cyan-950/70 text-cyan-200 border-cyan-500/40 hover:border-cyan-400',
+};
+
+export function GrillaHorario() {
+  const { nombreHorario, asignaturas, eliminarAsignatura } = useHorarioStore();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  return (
+    <div className="w-full max-w-7xl mx-auto p-4 space-y-4">
+      <header className="flex justify-between items-center border-b border-slate-800 pb-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-100">{nombreHorario}</h2>
+          <p className="text-xs text-slate-400 mt-1">
+            {asignaturas.length} {asignaturas.length === 1 ? 'asignatura registrada' : 'asignaturas registradas'}
+          </p>
+        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-indigo-600/20 flex items-center gap-2"
+        >
+          <span>+</span> Agregar Asignatura
+        </button>
+      </header>
+
+      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/50 shadow-xl">
+        <table className="w-full border-collapse text-left text-sm text-slate-300">
+          <thead>
+            <tr className="border-b border-slate-800 bg-slate-950/80">
+              <th className="p-3 w-32 text-center font-semibold text-slate-400">Bloque</th>
+              {DIAS_SEMANA.map((dia) => (
+                <th key={dia} className="p-3 text-center font-semibold text-slate-200 border-l border-slate-800/60">
+                  {dia}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/60">
+            {BLOQUES_HORAS.map((horaBloque) => {
+              const [horaInicio] = horaBloque.split(' - ');
+
+              return (
+                <tr key={horaBloque} className="hover:bg-slate-800/30 transition-colors">
+                  <td className="p-3 text-center text-xs font-mono text-slate-400 font-medium">
+                    {horaBloque}
+                  </td>
+                  {DIAS_SEMANA.map((dia) => {
+                    const ramosEncontrados = asignaturas.filter((ramo) =>
+                      ramo.bloques.some(
+                        (b) => b.dia === dia && b.horaInicio === horaInicio
+                      )
+                    );
+
+                    return (
+                      <td key={`${dia}-${horaBloque}`} className="p-1 border-l border-slate-800/60 h-20 min-w-[150px] align-top">
+                        {ramosEncontrados.map((ramo) => {
+                          const bloque = ramo.bloques.find((b) => b.dia === dia && b.horaInicio === horaInicio);
+
+                          return (
+                            <div
+                              key={ramo.id}
+                              className={`group relative p-2 rounded-lg border text-xs flex flex-col justify-between h-full transition-all shadow-md ${MAPA_COLORES[ramo.color]}`}
+                            >
+                              <div>
+                                <div className="font-semibold line-clamp-1">{ramo.nombre}</div>
+                                {ramo.codigo && (
+                                  <div className="text-[10px] opacity-75 font-mono">{ramo.codigo}</div>
+                                )}
+                              </div>
+
+                              <div className="flex items-center justify-between mt-1 text-[10px] opacity-90">
+                                {bloque?.sala ? (
+                                  <span className="font-medium bg-slate-950/80 px-1.5 py-0.5 rounded border border-white/10">
+                                    📍 {bloque.sala}
+                                  </span>
+                                ) : <span />}
+                                <button
+                                  onClick={() => eliminarAsignatura(ramo.id)}
+                                  className="opacity-0 group-hover:opacity-100 text-rose-400 hover:text-rose-300 font-bold px-1 rounded transition-opacity"
+                                  title="Eliminar ramo"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <ModalAsignatura
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+    </div>
+  );
+}
