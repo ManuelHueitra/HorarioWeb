@@ -58,37 +58,42 @@ export function GrillaHorario() {
                   </td>
                   {DIAS_SEMANA.map((dia) => {
                     const ramosEncontrados = asignaturas.filter((ramo) =>
-                      ramo.bloques.some(
-                        (b) => b.dia === dia && b.horaInicio === horaInicio
-                      )
+                      ramo.bloques.some((b) => b.dia === dia && b.horaInicio === horaInicio)
                     );
 
                     return (
-                      <td key={`${dia}-${horaBloque}`} className="p-1 border-l border-slate-800/60 h-20 min-w-[150px] align-top">
+                      <td
+                        key={`${dia}-${horaBloque}`}
+                        className="p-1 border-l border-slate-800/60 h-20 min-w-[130px] max-w-[160px] align-top overflow-hidden"
+                      >
                         {ramosEncontrados.map((ramo) => {
                           const bloque = ramo.bloques.find((b) => b.dia === dia && b.horaInicio === horaInicio);
 
                           return (
                             <div
                               key={ramo.id}
-                              className={`group relative p-2 rounded-lg border text-xs flex flex-col justify-between h-full transition-all shadow-md ${MAPA_COLORES[ramo.color]}`}
+                              className={`group relative p-1.5 rounded-md border text-[11px] flex flex-col justify-between h-full w-full overflow-hidden transition-all shadow-md ${MAPA_COLORES[ramo.color]}`}
                             >
-                              <div>
-                                <div className="font-semibold line-clamp-1">{ramo.nombre}</div>
+                              <div className="overflow-hidden">
+                                <div className="font-semibold leading-tight line-clamp-1 break-words" title={ramo.nombre}>
+                                  {ramo.nombre}
+                                </div>
                                 {ramo.codigo && (
-                                  <div className="text-[10px] opacity-75 font-mono">{ramo.codigo}</div>
+                                  <div className="text-[9px] opacity-75 font-mono truncate">{ramo.codigo}</div>
                                 )}
                               </div>
 
-                              <div className="flex items-center justify-between mt-1 text-[10px] opacity-90">
+                              <div className="flex items-center justify-between mt-1 text-[9px] opacity-90 gap-1">
                                 {bloque?.sala ? (
-                                  <span className="font-medium bg-slate-950/80 px-1.5 py-0.5 rounded border border-white/10">
+                                  <span className="font-medium bg-slate-950/80 px-1 py-0.5 rounded border border-white/10 truncate max-w-[85%]" title={bloque.sala}>
                                     📍 {bloque.sala}
                                   </span>
-                                ) : <span />}
+                                ) : (
+                                  <span />
+                                )}
                                 <button
                                   onClick={() => eliminarAsignatura(ramo.id)}
-                                  className="opacity-0 group-hover:opacity-100 text-rose-400 hover:text-rose-300 font-bold px-1 rounded transition-opacity"
+                                  className="opacity-0 group-hover:opacity-100 text-rose-400 hover:text-rose-300 font-bold px-1 rounded transition-opacity shrink-0"
                                   title="Eliminar ramo"
                                 >
                                   ✕
@@ -107,10 +112,7 @@ export function GrillaHorario() {
         </table>
       </div>
 
-      <ModalAsignatura
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+      <ModalAsignatura isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }
