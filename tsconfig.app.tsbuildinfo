@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/horario/GrillaHorario.tsx","./src/components/horario/ModalAsignatura.tsx","./src/store/useHorarioStore.ts","./src/types/index.ts","./src/utils/constantes.ts"],"version":"6.0.3"}
