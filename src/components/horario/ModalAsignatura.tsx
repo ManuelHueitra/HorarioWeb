@@ -1,11 +1,18 @@
 import { useState } from 'react';
 import { useHorarioStore } from '@/store/useHorarioStore';
 import { DIAS_SEMANA, BLOQUES_HORAS } from '@/utils/constantes';
-import type { ColorAsignatura, DiaSemana } from '@/types';
+import type { ColorAsignatura, DiaSemana, BloqueHorario } from '@/types';
 
 interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+}
+
+interface BloqueForm {
+  id: string;
+  dia: DiaSemana;
+  bloqueHora: string;
+  sala: string;
 }
 
 const PALETA_COLORES: { valor: ColorAsignatura; etiqueta: string; bg: string }[] = [
@@ -24,19 +31,57 @@ export function ModalAsignatura({ isOpen, onClose }: ModalProps) {
   const [nombre, setNombre] = useState('');
   const [codigo, setCodigo] = useState('');
   const [profesor, setProfesor] = useState('');
-  const [sala, setSala] = useState('');
   const [color, setColor] = useState<ColorAsignatura>('blue');
-  const [dia, setDia] = useState<DiaSemana>('Lunes');
-  const [bloqueHora, setBloqueHora] = useState(BLOQUES_HORAS[0]);
+
+  // Carga Académica
+  const [creditosSct, setCreditosSct] = useState<number | ''>('');
+  const [horasTp, setHorasTp] = useState<number | ''>('');
+  const [horasTa, setHorasTa] = useState<number | ''>('');
+
+  // Lista dinámicas de bloques de horario
+  const [bloquesForm, setBloquesForm] = useState<BloqueForm[]>([
+    { id: crypto.randomUUID(), dia: 'Lunes', bloqueHora: BLOQUES_HORAS[0], sala: '' },
+  ]);
 
   if (!isOpen) return null;
+
+  const agregarNuevoBloque = () => {
+    setBloquesForm((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), dia: 'Lunes', bloqueHora: BLOQUES_HORAS[0], sala: '' },
+    ]);
+  };
+
+  const eliminarBloqueForm = (id: string) => {
+    if (bloquesForm.length === 1) return;
+    setBloquesForm((prev) => prev.filter((b) => b.id !== id));
+  };
+
+  const actualizarBloqueForm = (
+    id: string,
+    campo: keyof BloqueForm,
+    valor: string
+  ) => {
+    setBloquesForm((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, [campo]: valor } : b))
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim()) return;
 
-    // Separar la hora de inicio y fin desde la cadena del bloque "08:30 - 09:15"
-    const [horaInicio, horaFin] = bloqueHora.split(' - ');
+    // Convertir bloques del formulario a la interfaz BloqueHorario
+    const bloquesMapeados: BloqueHorario[] = bloquesForm.map((b) => {
+      const [horaInicio, horaFin] = b.bloqueHora.split(' - ');
+      return {
+        id: b.id,
+        dia: b.dia,
+        horaInicio,
+        horaFin,
+        sala: b.sala.trim() || undefined,
+      };
+    });
 
     agregarAsignatura({
       id: crypto.randomUUID(),
@@ -44,28 +89,28 @@ export function ModalAsignatura({ isOpen, onClose }: ModalProps) {
       codigo: codigo || undefined,
       profesor: profesor || undefined,
       color,
-      bloques: [
-        {
-          id: crypto.randomUUID(),
-          dia,
-          horaInicio,
-          horaFin,
-          sala: sala || undefined,
-        },
-      ],
+      creditosSct: creditosSct !== '' ? Number(creditosSct) : 0,
+      horasTp: horasTp !== '' ? Number(horasTp) : 0,
+      horasTa: horasTa !== '' ? Number(horasTa) : 0,
+      bloques: bloquesMapeados,
     });
 
-    // Limpiar campos y cerrar
+    // Resetear formulario y cerrar
     setNombre('');
     setCodigo('');
     setProfesor('');
-    setSala('');
+    setCreditosSct('');
+    setHorasTp('');
+    setHorasTa('');
+    setBloquesForm([
+      { id: crypto.randomUUID(), dia: 'Lunes', bloqueHora: BLOQUES_HORAS[0], sala: '' },
+    ]);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-6">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center border-b border-slate-800 pb-3">
           <h3 className="text-xl font-semibold text-slate-100">Agregar Asignatura</h3>
           <button
@@ -106,56 +151,146 @@ export function ModalAsignatura({ isOpen, onClose }: ModalProps) {
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">
-                Sala (Opcional)
+                Profesor (Opcional)
               </label>
               <input
                 type="text"
-                placeholder="Ej: LABPIND / SALA 202"
-                value={sala}
-                onChange={(e) => setSala(e.target.value)}
+                placeholder="Ej: Lucas Almonacid"
+                value={profesor}
+                onChange={(e) => setProfesor(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">
-              Profesor (Opcional)
-            </label>
-            <input
-              type="text"
-              placeholder="Ej: Lucas Almonacid"
-              value={profesor}
-              onChange={(e) => setProfesor(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-            />
+          {/* Carga Académica */}
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                SCT (Créditos)
+              </label>
+              <input
+                type="number"
+                min="0"
+                placeholder="Ej: 5"
+                value={creditosSct}
+                onChange={(e) =>
+                  setCreditosSct(e.target.value === '' ? '' : Number(e.target.value))
+                }
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                Horas TP
+              </label>
+              <input
+                type="number"
+                min="0"
+                placeholder="Ej: 4"
+                value={horasTp}
+                onChange={(e) =>
+                  setHorasTp(e.target.value === '' ? '' : Number(e.target.value))
+                }
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                Horas TA
+              </label>
+              <input
+                type="number"
+                min="0"
+                placeholder="Ej: 4"
+                value={horasTa}
+                onChange={(e) =>
+                  setHorasTa(e.target.value === '' ? '' : Number(e.target.value))
+                }
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Día</label>
-              <select
-                value={dia}
-                onChange={(e) => setDia(e.target.value as DiaSemana)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+          {/* Sección de Bloques de Horarios Dinámicos */}
+          <div className="space-y-3 pt-2">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-semibold text-slate-300">
+                Bloques de Horario
+              </label>
+              <button
+                type="button"
+                onClick={agregarNuevoBloque}
+                className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
-                {DIAS_SEMANA.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
+                + Agregar otro bloque
+              </button>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Bloque Horario</label>
-              <select
-                value={bloqueHora}
-                onChange={(e) => setBloqueHora(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+
+            {bloquesForm.map((b, index) => (
+              <div
+                key={b.id}
+                className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2 relative"
               >
-                {BLOQUES_HORAS.map((b) => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
-            </div>
+                <div className="flex justify-between items-center text-[11px] text-slate-400">
+                  <span>Bloque {index + 1}</span>
+                  {bloquesForm.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => eliminarBloqueForm(b.id)}
+                      className="text-rose-400 hover:text-rose-300 text-xs font-bold"
+                    >
+                      ✕ Quitar
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <select
+                      value={b.dia}
+                      onChange={(e) =>
+                        actualizarBloqueForm(b.id, 'dia', e.target.value)
+                      }
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    >
+                      {DIAS_SEMANA.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <select
+                      value={b.bloqueHora}
+                      onChange={(e) =>
+                        actualizarBloqueForm(b.id, 'bloqueHora', e.target.value)
+                      }
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    >
+                      {BLOQUES_HORAS.map((hora) => (
+                        <option key={hora} value={hora}>
+                          {hora}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Sala / Lab (Opcional)"
+                    value={b.sala}
+                    onChange={(e) =>
+                      actualizarBloqueForm(b.id, 'sala', e.target.value)
+                    }
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+            ))}
           </div>
 
           <div>
