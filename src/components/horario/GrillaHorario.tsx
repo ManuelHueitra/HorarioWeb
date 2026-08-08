@@ -18,42 +18,30 @@ export function GrillaHorario() {
   const { nombreHorario, asignaturas, eliminarAsignatura } = useHorarioStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Calcula la cantidad total de bloques ocupados en la semana
-  const totalBloques = asignaturas.reduce(
-    (total, ramo) => total + ramo.bloques.length,
-    0
-  );
-
   return (
     <div className="w-full max-w-7xl mx-auto p-4 space-y-4">
       <header className="flex justify-between items-center border-b border-slate-800 pb-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-100">{nombreHorario}</h2>
-          <p className="text-xs text-indigo-400 font-medium mt-1">
-            {totalBloques} {totalBloques === 1 ? 'bloque agregado' : 'bloques agregados'}
+          <p className="text-xs text-slate-400 mt-1">
+            {asignaturas.length} {asignaturas.length === 1 ? 'asignatura registrada' : 'asignaturas registradas'}
           </p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-indigo-600/20 flex items-center gap-2"
         >
-          <span className="font-bold text-base">+</span>
-          <span className="hidden sm:inline">Agregar Asignatura</span>
+          <span>+</span> Agregar Asignatura
         </button>
       </header>
 
       <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/50 shadow-xl">
-        <table className="w-full border-collapse text-left text-sm">
+        <table className="w-full border-collapse text-left text-sm text-slate-300">
           <thead>
-            <tr className="border-b border-slate-800 bg-slate-950">
-              <th className="p-3 w-32 text-center font-bold text-slate-400 uppercase text-xs tracking-wider">
-                Bloque
-              </th>
+            <tr className="border-b border-slate-800 bg-slate-950/80">
+              <th className="p-3 w-32 text-center font-semibold text-slate-400">Bloque</th>
               {DIAS_SEMANA.map((dia) => (
-                <th
-                  key={dia}
-                  className="p-3 text-center font-bold text-indigo-300 border-l border-slate-800/60 uppercase text-xs tracking-wider bg-indigo-950/30"
-                >
+                <th key={dia} className="p-3 text-center font-semibold text-slate-200 border-l border-slate-800/60">
                   {dia}
                 </th>
               ))}
@@ -64,15 +52,13 @@ export function GrillaHorario() {
               const [horaInicio] = horaBloque.split(' - ');
 
               return (
-                <tr key={horaBloque} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="p-2 text-center text-xs font-mono text-cyan-400 font-semibold bg-slate-950/40">
+                <tr key={horaBloque} className="hover:bg-slate-800/30 transition-colors">
+                  <td className="p-3 text-center text-xs font-mono text-slate-400 font-medium">
                     {horaBloque}
                   </td>
                   {DIAS_SEMANA.map((dia) => {
                     const ramosEncontrados = asignaturas.filter((ramo) =>
-                      ramo.bloques.some(
-                        (b) => b.dia === dia && b.horaInicio === horaInicio
-                      )
+                      ramo.bloques.some((b) => b.dia === dia && b.horaInicio === horaInicio)
                     );
 
                     return (
@@ -81,9 +67,7 @@ export function GrillaHorario() {
                         className="p-1 border-l border-slate-800/60 h-20 min-w-[130px] max-w-[160px] align-top overflow-hidden"
                       >
                         {ramosEncontrados.map((ramo) => {
-                          const bloque = ramo.bloques.find(
-                            (b) => b.dia === dia && b.horaInicio === horaInicio
-                          );
+                          const bloque = ramo.bloques.find((b) => b.dia === dia && b.horaInicio === horaInicio);
 
                           return (
                             <div
@@ -91,25 +75,17 @@ export function GrillaHorario() {
                               className={`group relative p-1.5 rounded-md border text-[11px] flex flex-col justify-between h-full w-full overflow-hidden transition-all shadow-md ${MAPA_COLORES[ramo.color]}`}
                             >
                               <div className="overflow-hidden">
-                                <div
-                                  className="font-semibold leading-tight line-clamp-1 break-words"
-                                  title={ramo.nombre}
-                                >
+                                <div className="font-semibold leading-tight line-clamp-1 break-words" title={ramo.nombre}>
                                   {ramo.nombre}
                                 </div>
                                 {ramo.codigo && (
-                                  <div className="text-[9px] opacity-75 font-mono truncate">
-                                    {ramo.codigo}
-                                  </div>
+                                  <div className="text-[9px] opacity-75 font-mono truncate">{ramo.codigo}</div>
                                 )}
                               </div>
 
                               <div className="flex items-center justify-between mt-1 text-[9px] opacity-90 gap-1">
                                 {bloque?.sala ? (
-                                  <span
-                                    className="font-medium bg-slate-950/80 px-1 py-0.5 rounded border border-white/10 truncate max-w-[85%]"
-                                    title={bloque.sala}
-                                  >
+                                  <span className="font-medium bg-slate-950/80 px-1 py-0.5 rounded border border-white/10 truncate max-w-[85%]" title={bloque.sala}>
                                     📍 {bloque.sala}
                                   </span>
                                 ) : (
@@ -136,10 +112,7 @@ export function GrillaHorario() {
         </table>
       </div>
 
-      <ModalAsignatura
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+      <ModalAsignatura isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }
