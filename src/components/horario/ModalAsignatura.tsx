@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useHorarioStore } from '@/store/useHorarioStore';
 import { DIAS_SEMANA, BLOQUES_HORAS } from '@/utils/constantes';
-import type { ColorAsignatura, DiaSemana, BloqueHorario } from '@/types';
+import type { ColorAsignatura, DiaSemana, BloqueHorario, Asignatura } from '@/types';
 
 interface ModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
+  readonly asignaturaEditar?: Asignatura | null;
+  readonly bloqueInicial?: { dia: DiaSemana; bloqueHora: string } | null;
 }
 
 interface BloqueForm {
@@ -25,23 +27,65 @@ const PALETA_COLORES: { valor: ColorAsignatura; etiqueta: string; bg: string }[]
   { valor: 'cyan', etiqueta: 'Cian', bg: 'bg-cyan-600' },
 ];
 
-export function ModalAsignatura({ isOpen, onClose }: ModalProps) {
-  const { agregarAsignatura } = useHorarioStore();
+export function ModalAsignatura({
+  isOpen,
+  onClose,
+  asignaturaEditar,
+  bloqueInicial,
+}: ModalProps) {
+  const { agregarAsignatura, actualizarAsignatura, eliminarAsignatura } = useHorarioStore();
 
   const [nombre, setNombre] = useState('');
   const [codigo, setCodigo] = useState('');
   const [profesor, setProfesor] = useState('');
   const [color, setColor] = useState<ColorAsignatura>('blue');
 
-  // Carga Académica
   const [creditosSct, setCreditosSct] = useState<number | ''>('');
   const [horasTp, setHorasTp] = useState<number | ''>('');
   const [horasTa, setHorasTa] = useState<number | ''>('');
 
-  // Lista dinámicas de bloques de horario
   const [bloquesForm, setBloquesForm] = useState<BloqueForm[]>([
     { id: crypto.randomUUID(), dia: 'Lunes', bloqueHora: BLOQUES_HORAS[0], sala: '' },
   ]);
+
+  useEffect(() => {
+    if (asignaturaEditar) {
+      setNombre(asignaturaEditar.nombre);
+      setCodigo(asignaturaEditar.codigo || '');
+      setProfesor(asignaturaEditar.profesor || '');
+      setColor(asignaturaEditar.color);
+      setCreditosSct(asignaturaEditar.creditosSct ?? '');
+      setHorasTp(asignaturaEditar.horasTp ?? '');
+      setHorasTa(asignaturaEditar.horasTa ?? '');
+
+      if (asignaturaEditar.bloques && asignaturaEditar.bloques.length > 0) {
+        setBloquesForm(
+          asignaturaEditar.bloques.map((b) => ({
+            id: b.id || crypto.randomUUID(),
+            dia: (b.dia as DiaSemana) || 'Lunes',
+            bloqueHora: `${b.horaInicio} - ${b.horaFin}`,
+            sala: b.sala || '',
+          }))
+        );
+      }
+    } else {
+      setNombre('');
+      setCodigo('');
+      setProfesor('');
+      setColor('blue');
+      setCreditosSct('');
+      setHorasTp('');
+      setHorasTa('');
+      setBloquesForm([
+        {
+          id: crypto.randomUUID(),
+          dia: bloqueInicial ? bloqueInicial.dia : 'Lunes',
+          bloqueHora: bloqueInicial ? bloqueInicial.bloqueHora : BLOQUES_HORAS[0],
+          sala: '',
+        },
+      ]);
+    }
+  }, [asignaturaEditar, bloqueInicial, isOpen]);
 
   if (!isOpen) return null;
 
@@ -71,7 +115,6 @@ export function ModalAsignatura({ isOpen, onClose }: ModalProps) {
     e.preventDefault();
     if (!nombre.trim()) return;
 
-    // Convertir bloques del formulario a la interfaz BloqueHorario
     const bloquesMapeados: BloqueHorario[] = bloquesForm.map((b) => {
       const [horaInicio, horaFin] = b.bloqueHora.split(' - ');
       return {
@@ -83,36 +126,49 @@ export function ModalAsignatura({ isOpen, onClose }: ModalProps) {
       };
     });
 
-    agregarAsignatura({
-      id: crypto.randomUUID(),
-      nombre,
-      codigo: codigo || undefined,
-      profesor: profesor || undefined,
-      color,
-      creditosSct: creditosSct !== '' ? Number(creditosSct) : 0,
-      horasTp: horasTp !== '' ? Number(horasTp) : 0,
-      horasTa: horasTa !== '' ? Number(horasTa) : 0,
-      bloques: bloquesMapeados,
-    });
+    if (asignaturaEditar) {
+      actualizarAsignatura({
+        ...asignaturaEditar,
+        nombre,
+        codigo: codigo || undefined,
+        profesor: profesor || undefined,
+        color,
+        creditosSct: creditosSct !== '' ? Number(creditosSct) : 0,
+        horasTp: horasTp !== '' ? Number(horasTp) : 0,
+        horasTa: horasTa !== '' ? Number(horasTa) : 0,
+        bloques: bloquesMapeados,
+      });
+    } else {
+      agregarAsignatura({
+        id: crypto.randomUUID(),
+        nombre,
+        codigo: codigo || undefined,
+        profesor: profesor || undefined,
+        color,
+        creditosSct: creditosSct !== '' ? Number(creditosSct) : 0,
+        horasTp: horasTp !== '' ? Number(horasTp) : 0,
+        horasTa: horasTa !== '' ? Number(horasTa) : 0,
+        bloques: bloquesMapeados,
+      });
+    }
 
-    // Resetear formulario y cerrar
-    setNombre('');
-    setCodigo('');
-    setProfesor('');
-    setCreditosSct('');
-    setHorasTp('');
-    setHorasTa('');
-    setBloquesForm([
-      { id: crypto.randomUUID(), dia: 'Lunes', bloqueHora: BLOQUES_HORAS[0], sala: '' },
-    ]);
     onClose();
+  };
+
+  const handleEliminar = () => {
+    if (asignaturaEditar) {
+      eliminarAsignatura(asignaturaEditar.id);
+      onClose();
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-          <h3 className="text-xl font-semibold text-slate-100">Agregar Asignatura</h3>
+          <h3 className="text-xl font-semibold text-slate-100">
+            {asignaturaEditar ? 'Editar Asignatura' : 'Agregar Asignatura'}
+          </h3>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-200 transition-colors"
@@ -212,7 +268,7 @@ export function ModalAsignatura({ isOpen, onClose }: ModalProps) {
             </div>
           </div>
 
-          {/* Sección de Bloques de Horarios Dinámicos */}
+          {/* Bloques de Horarios */}
           <div className="space-y-3 pt-2">
             <div className="flex justify-between items-center">
               <label className="text-xs font-semibold text-slate-300">
@@ -281,7 +337,7 @@ export function ModalAsignatura({ isOpen, onClose }: ModalProps) {
                 <div>
                   <input
                     type="text"
-                    placeholder="Sala / Lab (Opcional)"
+                    placeholder="Sala / Lab de este bloque (Opcional)"
                     value={b.sala}
                     onChange={(e) =>
                       actualizarBloqueForm(b.id, 'sala', e.target.value)
@@ -310,20 +366,32 @@ export function ModalAsignatura({ isOpen, onClose }: ModalProps) {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors shadow-lg shadow-indigo-600/20"
-            >
-              Guardar Ramo
-            </button>
+          <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+            {asignaturaEditar ? (
+              <button
+                type="button"
+                onClick={handleEliminar}
+                className="px-3 py-2 text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg transition-colors border border-rose-900/50"
+              >
+                Eliminar Asignatura
+              </button>
+            ) : <div />}
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors shadow-lg shadow-indigo-600/20"
+              >
+                {asignaturaEditar ? 'Guardar Cambios' : 'Guardar Ramo'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

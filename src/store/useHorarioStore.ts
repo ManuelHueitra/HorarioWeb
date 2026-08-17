@@ -5,37 +5,35 @@ import type { Asignatura } from '@/types';
 interface HorarioState {
   nombreHorario: string;
   asignaturas: Asignatura[];
-    
   setNombreHorario: (nombre: string) => void;
-  agregarAsignatura: (nuevaAsignatura: Asignatura) => void;
+  agregarAsignatura: (asignatura: Asignatura) => void;
+  actualizarAsignatura: (asignatura: Asignatura) => void;
   eliminarAsignatura: (id: string) => void;
-  limpiarHorario: () => void;
 }
 
 export const useHorarioStore = create<HorarioState>()(
   persist(
     (set) => ({
-      nombreHorario: 'Mi Horario 2026',
+      nombreHorario: 'Mi Horario Semestral',
       asignaturas: [],
-
-      setNombreHorario: (nombre) => 
-        set({ nombreHorario: nombre }),
-
-      agregarAsignatura: (nuevaAsignatura) =>
+      setNombreHorario: (nombreHorario) => set({ nombreHorario }),
+      agregarAsignatura: (asignatura) =>
         set((state) => ({
-          asignaturas: [...state.asignaturas, nuevaAsignatura],
+          asignaturas: [...state.asignaturas, asignatura],
         })),
-
+      actualizarAsignatura: (asignaturaActualizada) =>
+        set((state) => ({
+          asignaturas: state.asignaturas.map((a) =>
+            a.id === asignaturaActualizada.id ? asignaturaActualizada : a
+          ),
+        })),
       eliminarAsignatura: (id) =>
         set((state) => ({
-          asignaturas: state.asignaturas.filter((ramo) => ramo.id !== id),
+          asignaturas: state.asignaturas.filter((a) => a.id !== id),
         })),
-
-      limpiarHorario: () => 
-        set({ asignaturas: [] }),
     }),
     {
-      name: 'horario-web-storage',
+      name: 'horario-storage',
     }
   )
 );
