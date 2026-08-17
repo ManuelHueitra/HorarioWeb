@@ -1,0 +1,68 @@
+import type { TemaHorario } from '@/types';
+
+export const TEMAS_PREDEFINIDOS: TemaHorario[] = [
+  {
+    id: 'synthwave-80s',
+    nombre: 'Synthwave 80s',
+    esPredefinido: true,
+    colorTitulo: '#ff007f',
+    colorDias: '#00f0ff',
+    colorHoras: '#ffe600',
+  },
+  {
+    id: 'cyber-matrix',
+    nombre: 'Cyber Matrix',
+    esPredefinido: true,
+    colorTitulo: '#00ff66',
+    colorDias: '#38ef7d',
+    colorHoras: '#a3ff00',
+  },
+  {
+    id: 'sunset-fire',
+    nombre: 'Atardecer Fuego',
+    esPredefinido: true,
+    colorTitulo: '#ff4b2b',
+    colorDias: '#ff007f', 
+    colorHoras: '#f9d423',
+  },
+  {
+    id: 'dracula-neon',
+    nombre: 'Violeta Dracula',
+    esPredefinido: true,
+    colorTitulo: '#bd93f9', 
+    colorDias: '#ff79c6',  
+    colorHoras: '#50fa7b', 
+  },
+  {
+    id: 'electric-aqua',
+    nombre: 'Aqua Marina',
+    esPredefinido: true,
+    colorTitulo: '#00f2fe', 
+    colorDias: '#38bdf8',
+    colorHoras: '#818cf8', 
+  },
+  {
+    id: 'toxic-volt',
+    nombre: 'Toxico Volt',
+    esPredefinido: true,
+    colorTitulo: '#ccff00', 
+    colorDias: '#00ffcc', 
+    colorHoras: '#ff0099', 
+  },
+  {
+    id: 'nordic-frost',
+    nombre: 'Nordic Frost',
+    esPredefinido: true,
+    colorTitulo: '#88c0d0',
+    colorDias: '#81a1c1',
+    colorHoras: '#eceff4',
+  },
+  {
+    id: 'slate-clasico',
+    nombre: 'Slate Minimal',
+    esPredefinido: true,
+    colorTitulo: '#f8fafc',
+    colorDias: '#a5b4fc', 
+    colorHoras: '#22d3ee',
+  },
+];

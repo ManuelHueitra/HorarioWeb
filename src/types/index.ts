@@ -34,3 +34,12 @@ export interface Asignatura {
   horasTp?: number;
   horasTa?: number;
 }
+
+export interface TemaHorario {
+  id: string;
+  nombre: string;
+  esPredefinido?: boolean;
+  colorTitulo: string;
+  colorDias: string;
+  colorHoras: string;
+}

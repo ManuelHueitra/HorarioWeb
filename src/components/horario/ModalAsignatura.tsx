@@ -20,10 +20,10 @@ interface BloqueForm {
 const PALETA_COLORES: { valor: ColorAsignatura; etiqueta: string; bg: string }[] = [
   { valor: 'blue', etiqueta: 'Azul', bg: 'bg-blue-600' },
   { valor: 'emerald', etiqueta: 'Verde', bg: 'bg-emerald-600' },
-  { valor: 'purple', etiqueta: 'Púrpura', bg: 'bg-purple-600' },
+  { valor: 'purple', etiqueta: 'Purpura', bg: 'bg-purple-600' },
   { valor: 'amber', etiqueta: 'Amarillo', bg: 'bg-amber-600' },
   { valor: 'rose', etiqueta: 'Rojo', bg: 'bg-rose-600' },
-  { valor: 'indigo', etiqueta: 'Índigo', bg: 'bg-indigo-600' },
+  { valor: 'indigo', etiqueta: 'Indigo', bg: 'bg-indigo-600' },
   { valor: 'cyan', etiqueta: 'Cian', bg: 'bg-cyan-600' },
 ];
 
@@ -171,9 +171,9 @@ export function ModalAsignatura({
           </h3>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-200 transition-colors"
+            className="text-slate-400 hover:text-slate-200 transition-colors font-mono"
           >
-            ✕
+            X
           </button>
         </div>
 
@@ -195,7 +195,7 @@ export function ModalAsignatura({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">
-                Código (Opcional)
+                Codigo (Opcional)
               </label>
               <input
                 type="text"
@@ -207,23 +207,35 @@ export function ModalAsignatura({
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">
-                Profesor (Opcional)
+                Sala (Opcional)
               </label>
               <input
                 type="text"
-                placeholder="Ej: Lucas Almonacid"
-                value={profesor}
-                onChange={(e) => setProfesor(e.target.value)}
+                placeholder="Ej: LABPIND / SALA 202"
+                value={bloquesForm[0]?.sala || ''}
+                onChange={(e) => actualizarBloqueForm(bloquesForm[0].id, 'sala', e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
               />
             </div>
           </div>
 
-          {/* Carga Académica */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">
+              Profesor (Opcional)
+            </label>
+            <input
+              type="text"
+              placeholder="Ej: Lucas Almonacid"
+              value={profesor}
+              onChange={(e) => setProfesor(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="block text-[11px] font-medium text-slate-400 mb-1">
-                SCT (Créditos)
+                SCT (Creditos)
               </label>
               <input
                 type="number"
@@ -268,7 +280,6 @@ export function ModalAsignatura({
             </div>
           </div>
 
-          {/* Bloques de Horarios */}
           <div className="space-y-3 pt-2">
             <div className="flex justify-between items-center">
               <label className="text-xs font-semibold text-slate-300">
@@ -296,7 +307,7 @@ export function ModalAsignatura({
                       onClick={() => eliminarBloqueForm(b.id)}
                       className="text-rose-400 hover:text-rose-300 text-xs font-bold"
                     >
-                      ✕ Quitar
+                      Quitar
                     </button>
                   )}
                 </div>
