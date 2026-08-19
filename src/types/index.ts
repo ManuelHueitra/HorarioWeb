@@ -16,7 +16,7 @@ export type DiaSemana =
 
 export type TipoClase = 'Catedra' | 'Taller' | 'Laboratorio' | 'Ayudantia';
 
-export type CondicionAsignatura = 'Regular' | 'Arrastre' | 'Adelanto';
+export type CondicionAsignatura = 'Al día' | 'Atrasado' | 'Adelantado';
 
 export interface BloqueHorario {
   id: string;

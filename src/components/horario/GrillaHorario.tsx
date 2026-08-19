@@ -590,8 +590,14 @@ export function GrillaHorario() {
                                     <span className="font-semibold line-clamp-1">
                                       {ramo.nombre}
                                     </span>
-                                    {ramo.condicion && ramo.condicion !== 'Regular' && (
-                                      <span className="text-[9px] px-1 py-0.2 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded">
+                                    {ramo.condicion && ramo.condicion !== 'Al día' && (
+                                      <span
+                                        className={`text-[9px] px-1 py-0.2 rounded border ${
+                                          ramo.condicion === 'Atrasado'
+                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                        }`}
+                                      >
                                         {ramo.condicion}
                                       </span>
                                     )}

@@ -36,7 +36,7 @@ const PALETA_COLORES: { valor: ColorAsignatura; etiqueta: string; bg: string }[]
 ];
 
 const TIPOS_CLASE: TipoClase[] = ['Catedra', 'Taller', 'Laboratorio', 'Ayudantia'];
-const CONDICIONES: CondicionAsignatura[] = ['Regular', 'Arrastre', 'Adelanto'];
+const CONDICIONES: CondicionAsignatura[] = ['Al día', 'Atrasado', 'Adelantado'];
 
 export function ModalAsignatura({
   isOpen,
@@ -51,7 +51,7 @@ export function ModalAsignatura({
   const [codigo, setCodigo] = useState('');
   const [profesor, setProfesor] = useState('');
   const [color, setColor] = useState<ColorAsignatura>('blue');
-  const [condicion, setCondicion] = useState<CondicionAsignatura>('Regular');
+  const [condicion, setCondicion] = useState<CondicionAsignatura>('Al día');
 
   const [creditosSct, setCreditosSct] = useState<number | ''>('');
   const [horasTp, setHorasTp] = useState<number | ''>('');
@@ -73,7 +73,7 @@ export function ModalAsignatura({
       setCodigo(asignaturaEditar.codigo || '');
       setProfesor(asignaturaEditar.profesor || '');
       setColor(asignaturaEditar.color);
-      setCondicion(asignaturaEditar.condicion || 'Regular');
+      setCondicion(asignaturaEditar.condicion || 'Al día');
       setCreditosSct(asignaturaEditar.creditosSct ?? '');
       setHorasTp(asignaturaEditar.horasTp ?? '');
       setHorasTa(asignaturaEditar.horasTa ?? '');
@@ -82,7 +82,7 @@ export function ModalAsignatura({
         setBloquesForm(
           asignaturaEditar.bloques.map((b) => ({
             id: b.id || crypto.randomUUID(),
-            dia: (b.dia as DiaSemana) || 'Lunes',
+            dia: b.dia,
             bloqueHora: `${b.horaInicio} - ${b.horaFin}`,
             sala: b.sala || '',
             tipo: b.tipo || 'Catedra',
@@ -94,7 +94,7 @@ export function ModalAsignatura({
       setCodigo('');
       setProfesor('');
       setColor('blue');
-      setCondicion('Regular');
+      setCondicion('Al día');
       setCreditosSct('');
       setHorasTp('');
       setHorasTa('');
@@ -130,10 +130,10 @@ export function ModalAsignatura({
     setBloquesForm((prev) => prev.filter((b) => b.id !== id));
   };
 
-  const actualizarBloqueForm = (
+  const actualizarBloqueForm = <K extends keyof BloqueForm>(
     id: string,
-    campo: keyof BloqueForm,
-    valor: string
+    campo: K,
+    valor: BloqueForm[K]
   ) => {
     setBloquesForm((prev) =>
       prev.map((b) => (b.id === id ? { ...b, [campo]: valor } : b))
@@ -344,7 +344,7 @@ export function ModalAsignatura({
                     <select
                       value={b.dia}
                       onChange={(e) =>
-                        actualizarBloqueForm(b.id, 'dia', e.target.value)
+                        actualizarBloqueForm(b.id, 'dia', e.target.value as DiaSemana)
                       }
                       className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                     >
@@ -374,7 +374,7 @@ export function ModalAsignatura({
                     <select
                       value={b.tipo}
                       onChange={(e) =>
-                        actualizarBloqueForm(b.id, 'tipo', e.target.value)
+                        actualizarBloqueForm(b.id, 'tipo', e.target.value as TipoClase)
                       }
                       className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                     >
