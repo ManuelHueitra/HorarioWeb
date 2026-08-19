@@ -20,15 +20,6 @@ const MAPA_COLORES: Record<ColorAsignatura, string> = {
   cyan: 'bg-cyan-950/70 text-cyan-200 border-cyan-500/40 hover:border-cyan-400',
 };
 
-// Dias fijos de Lunes a Viernes
-const DIAS_LABORALES: DiaSemana[] = [
-  'Lunes',
-  'Martes',
-  'Miercoles',
-  'Jueves',
-  'Viernes',
-];
-
 export function GrillaHorario() {
   const {
     planes,
@@ -65,21 +56,17 @@ export function GrillaHorario() {
   const [mostrarConfigGrilla, setMostrarConfigGrilla] = useState(false);
   const [nombreNuevoTema, setNombreNuevoTema] = useState('');
 
-  // Lista de horas de fin disponibles para el selector
   const opcionesHoraFin = BLOQUES_HORAS.map((b) => b.split(' - ')[1]);
 
-  // Convertir hora HH:MM a minutos para comparar
   const aMinutos = (horaStr: string) => {
     const [h, m] = horaStr.split(':').map(Number);
     return h * 60 + m;
   };
 
-  // Encontrar la hora maxima global entre todos los dias
   const maxMinutosGlobal = Math.max(
-    ...DIAS_LABORALES.map((dia) => aMinutos(limitesPorDia[dia] || '18:15'))
+    ...DIAS_SEMANA.map((dia) => aMinutos(limitesPorDia[dia] || '18:15'))
   );
 
-  // Filtrar solo los bloques que esten dentro del rango maximo
   const bloquesVisibles = BLOQUES_HORAS.filter((b) => {
     const horaInicio = b.split(' - ')[0];
     return aMinutos(horaInicio) < maxMinutosGlobal;
@@ -133,15 +120,13 @@ export function GrillaHorario() {
     setNombreNuevoTema('');
   };
 
-  // Metricas
   const totalSct = asignaturas.reduce((acc, r) => acc + (r.creditosSct || 0), 0);
   const totalTp = asignaturas.reduce((acc, r) => acc + (r.horasTp || 0), 0);
   const totalTa = asignaturas.reduce((acc, r) => acc + (r.horasTa || 0), 0);
   const totalHorasSemana = totalTp + totalTa;
 
-  // Calculo de choques
   let totalChoques = 0;
-  DIAS_LABORALES.forEach((dia) => {
+  DIAS_SEMANA.forEach((dia) => {
     bloquesVisibles.forEach((horaBloque) => {
       const [horaInicio] = horaBloque.split(' - ');
       const ramosEnBloque = asignaturas.filter((ramo) =>
@@ -320,7 +305,7 @@ export function GrillaHorario() {
             Hora de termino por dia:
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            {DIAS_LABORALES.map((dia) => (
+            {DIAS_SEMANA.map((dia) => (
               <div key={dia} className="space-y-1">
                 <label className="text-[11px] font-medium text-slate-400 block">
                   {dia}:
@@ -509,7 +494,7 @@ export function GrillaHorario() {
               <th className="p-3 w-32 text-center font-semibold text-slate-400">
                 Bloque
               </th>
-              {DIAS_LABORALES.map((dia) => (
+              {DIAS_SEMANA.map((dia) => (
                 <th
                   key={dia}
                   className="p-3 text-center font-semibold border-l border-slate-800/60 transition-colors"
@@ -529,33 +514,28 @@ export function GrillaHorario() {
                 <tr
                   key={horaBloque}
                   className={`transition-colors ${
-                    esAlmuerzo ? 'bg-amber-500/10' : 'hover:bg-slate-800/20'
+                    esAlmuerzo ? 'bg-yellow-500/20 border-y-2 border-yellow-500/50' : 'hover:bg-slate-800/20'
                   }`}
                 >
-                  {/* Columna de hora */}
                   <td
-                    className={`p-3 text-center text-xs font-mono font-medium transition-colors ${
-                      esAlmuerzo ? 'text-amber-400 font-bold' : ''
+                    className={`p-3 text-center text-xs font-mono transition-colors ${
+                      esAlmuerzo ? 'text-yellow-400 font-bold' : 'font-medium'
                     }`}
                     style={{ color: esAlmuerzo ? undefined : temaActivo.colorHoras }}
                   >
                     <div>{horaBloque}</div>
                     {esAlmuerzo && (
-                      <div className="text-[10px] uppercase font-bold tracking-wider text-amber-400/90 mt-0.5">
-                        Almuerzo
+                      <div className="text-[10px] uppercase font-black tracking-wider text-yellow-400 mt-1 bg-yellow-500/20 rounded py-0.5">
+                        ALMUERZO
                       </div>
                     )}
                   </td>
 
-                  {/* Columnas por cada dia de la semana */}
-                  {DIAS_LABORALES.map((dia) => {
-                    const limiteDiaMinutos = aMinutos(
-                      limitesPorDia[dia] || '18:15'
-                    );
+                  {DIAS_SEMANA.map((dia) => {
+                    const limiteDiaMinutos = aMinutos(limitesPorDia[dia] || '18:15');
                     const horaFinBloqueMinutos = aMinutos(horaFin);
                     const estaFueraDeRango = horaFinBloqueMinutos > limiteDiaMinutos;
 
-                    // Si el bloque esta despues de la hora de salida de ese dia
                     if (estaFueraDeRango) {
                       return (
                         <td
@@ -581,10 +561,8 @@ export function GrillaHorario() {
                       <td
                         key={`${dia}-${horaBloque}`}
                         className={`p-1 border-l border-slate-800/60 min-w-[150px] align-top relative group transition-colors ${
-                          esAlmuerzo && ramosEncontrados.length === 0
-                            ? 'bg-amber-500/5'
-                            : ''
-                        } ${hayTope ? 'bg-rose-950/20 border-rose-500/40' : ''}`}
+                          hayTope ? 'bg-rose-950/20 border-rose-500/40' : ''
+                        }`}
                       >
                         {hayTope && (
                           <div className="text-[10px] text-center font-bold text-rose-400 bg-rose-950/80 border border-rose-500/30 rounded py-0.5 mb-1">
@@ -595,8 +573,7 @@ export function GrillaHorario() {
                         <div className="space-y-1">
                           {ramosEncontrados.map((ramo) => {
                             const bloque = ramo.bloques.find(
-                              (b) =>
-                                b.dia === dia && b.horaInicio === horaInicio
+                              (b) => b.dia === dia && b.horaInicio === horaInicio
                             );
 
                             return (
@@ -613,12 +590,11 @@ export function GrillaHorario() {
                                     <span className="font-semibold line-clamp-1">
                                       {ramo.nombre}
                                     </span>
-                                    {ramo.condicion &&
-                                      ramo.condicion !== 'Regular' && (
-                                        <span className="text-[9px] px-1 py-0.2 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded">
-                                          {ramo.condicion}
-                                        </span>
-                                      )}
+                                    {ramo.condicion && ramo.condicion !== 'Regular' && (
+                                      <span className="text-[9px] px-1 py-0.2 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded">
+                                        {ramo.condicion}
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="flex items-center gap-1.5 text-[10px] opacity-75 font-mono">
                                     {ramo.codigo && <span>{ramo.codigo}</span>}
@@ -649,12 +625,10 @@ export function GrillaHorario() {
                           {ramosEncontrados.length === 0 && (
                             <button
                               type="button"
-                              onClick={() =>
-                                abrirModalCrear(dia as DiaSemana, horaBloque)
-                              }
+                              onClick={() => abrirModalCrear(dia as DiaSemana, horaBloque)}
                               className={`w-full h-16 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-800/40 border border-dashed flex items-center justify-center transition-all text-xs ${
                                 esAlmuerzo
-                                  ? 'border-amber-500/30 text-amber-400/70 hover:text-amber-300'
+                                  ? 'border-yellow-500/50 text-yellow-400/80 hover:text-yellow-300'
                                   : 'border-slate-700/50 text-slate-500 hover:text-indigo-400'
                               }`}
                               title={`Agregar ramo el ${dia} a las ${horaBloque}`}
