@@ -10,17 +10,21 @@ export type ColorAsignatura =
 export type DiaSemana =
   | 'Lunes'
   | 'Martes'
-  | 'Miércoles'
+  | 'Miercoles'
   | 'Jueves'
-  | 'Viernes'
-  | 'Sábado';
+  | 'Viernes';
+
+export type TipoClase = 'Catedra' | 'Taller' | 'Laboratorio' | 'Ayudantia';
+
+export type CondicionAsignatura = 'Regular' | 'Arrastre' | 'Adelanto';
 
 export interface BloqueHorario {
-  id?: string;
-  dia: DiaSemana | string;
+  id: string;
+  dia: DiaSemana;
   horaInicio: string;
   horaFin: string;
   sala?: string;
+  tipo?: TipoClase;
 }
 
 export interface Asignatura {
@@ -29,6 +33,7 @@ export interface Asignatura {
   codigo?: string;
   profesor?: string;
   color: ColorAsignatura;
+  condicion?: CondicionAsignatura;
   bloques: BloqueHorario[];
   creditosSct?: number;
   horasTp?: number;
@@ -42,4 +47,16 @@ export interface TemaHorario {
   colorTitulo: string;
   colorDias: string;
   colorHoras: string;
+}
+
+export interface ConfiguracionGrilla {
+  limitePorDia: Record<string, string>;
+}
+
+export interface PlanHorario {
+  id: string;
+  nombre: string;
+  asignaturas: Asignatura[];
+  temaActivo: TemaHorario;
+  configGrilla: ConfiguracionGrilla;
 }

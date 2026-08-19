@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useHorarioStore } from '@/store/useHorarioStore';
 import { DIAS_SEMANA, BLOQUES_HORAS } from '@/utils/constantes';
-import type { ColorAsignatura, DiaSemana, BloqueHorario, Asignatura } from '@/types';
+import type {
+  ColorAsignatura,
+  DiaSemana,
+  BloqueHorario,
+  Asignatura,
+  TipoClase,
+  CondicionAsignatura,
+} from '@/types';
 
 interface ModalProps {
   readonly isOpen: boolean;
@@ -15,6 +22,7 @@ interface BloqueForm {
   dia: DiaSemana;
   bloqueHora: string;
   sala: string;
+  tipo: TipoClase;
 }
 
 const PALETA_COLORES: { valor: ColorAsignatura; etiqueta: string; bg: string }[] = [
@@ -27,25 +35,36 @@ const PALETA_COLORES: { valor: ColorAsignatura; etiqueta: string; bg: string }[]
   { valor: 'cyan', etiqueta: 'Cian', bg: 'bg-cyan-600' },
 ];
 
+const TIPOS_CLASE: TipoClase[] = ['Catedra', 'Taller', 'Laboratorio', 'Ayudantia'];
+const CONDICIONES: CondicionAsignatura[] = ['Regular', 'Arrastre', 'Adelanto'];
+
 export function ModalAsignatura({
   isOpen,
   onClose,
   asignaturaEditar,
   bloqueInicial,
 }: ModalProps) {
-  const { agregarAsignatura, actualizarAsignatura, eliminarAsignatura } = useHorarioStore();
+  const { agregarAsignatura, actualizarAsignatura, eliminarAsignatura } =
+    useHorarioStore();
 
   const [nombre, setNombre] = useState('');
   const [codigo, setCodigo] = useState('');
   const [profesor, setProfesor] = useState('');
   const [color, setColor] = useState<ColorAsignatura>('blue');
+  const [condicion, setCondicion] = useState<CondicionAsignatura>('Regular');
 
   const [creditosSct, setCreditosSct] = useState<number | ''>('');
   const [horasTp, setHorasTp] = useState<number | ''>('');
   const [horasTa, setHorasTa] = useState<number | ''>('');
 
   const [bloquesForm, setBloquesForm] = useState<BloqueForm[]>([
-    { id: crypto.randomUUID(), dia: 'Lunes', bloqueHora: BLOQUES_HORAS[0], sala: '' },
+    {
+      id: crypto.randomUUID(),
+      dia: 'Lunes',
+      bloqueHora: BLOQUES_HORAS[0],
+      sala: '',
+      tipo: 'Catedra',
+    },
   ]);
 
   useEffect(() => {
@@ -54,6 +73,7 @@ export function ModalAsignatura({
       setCodigo(asignaturaEditar.codigo || '');
       setProfesor(asignaturaEditar.profesor || '');
       setColor(asignaturaEditar.color);
+      setCondicion(asignaturaEditar.condicion || 'Regular');
       setCreditosSct(asignaturaEditar.creditosSct ?? '');
       setHorasTp(asignaturaEditar.horasTp ?? '');
       setHorasTa(asignaturaEditar.horasTa ?? '');
@@ -65,6 +85,7 @@ export function ModalAsignatura({
             dia: (b.dia as DiaSemana) || 'Lunes',
             bloqueHora: `${b.horaInicio} - ${b.horaFin}`,
             sala: b.sala || '',
+            tipo: b.tipo || 'Catedra',
           }))
         );
       }
@@ -73,6 +94,7 @@ export function ModalAsignatura({
       setCodigo('');
       setProfesor('');
       setColor('blue');
+      setCondicion('Regular');
       setCreditosSct('');
       setHorasTp('');
       setHorasTa('');
@@ -82,6 +104,7 @@ export function ModalAsignatura({
           dia: bloqueInicial ? bloqueInicial.dia : 'Lunes',
           bloqueHora: bloqueInicial ? bloqueInicial.bloqueHora : BLOQUES_HORAS[0],
           sala: '',
+          tipo: 'Catedra',
         },
       ]);
     }
@@ -92,7 +115,13 @@ export function ModalAsignatura({
   const agregarNuevoBloque = () => {
     setBloquesForm((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), dia: 'Lunes', bloqueHora: BLOQUES_HORAS[0], sala: '' },
+      {
+        id: crypto.randomUUID(),
+        dia: 'Lunes',
+        bloqueHora: BLOQUES_HORAS[0],
+        sala: '',
+        tipo: 'Catedra',
+      },
     ]);
   };
 
@@ -123,33 +152,27 @@ export function ModalAsignatura({
         horaInicio,
         horaFin,
         sala: b.sala.trim() || undefined,
+        tipo: b.tipo,
       };
     });
 
+    const datosAsignatura: Asignatura = {
+      id: asignaturaEditar ? asignaturaEditar.id : crypto.randomUUID(),
+      nombre: nombre.trim(),
+      codigo: codigo.trim() || undefined,
+      profesor: profesor.trim() || undefined,
+      color,
+      condicion,
+      creditosSct: creditosSct !== '' ? Number(creditosSct) : 0,
+      horasTp: horasTp !== '' ? Number(horasTp) : 0,
+      horasTa: horasTa !== '' ? Number(horasTa) : 0,
+      bloques: bloquesMapeados,
+    };
+
     if (asignaturaEditar) {
-      actualizarAsignatura({
-        ...asignaturaEditar,
-        nombre,
-        codigo: codigo || undefined,
-        profesor: profesor || undefined,
-        color,
-        creditosSct: creditosSct !== '' ? Number(creditosSct) : 0,
-        horasTp: horasTp !== '' ? Number(horasTp) : 0,
-        horasTa: horasTa !== '' ? Number(horasTa) : 0,
-        bloques: bloquesMapeados,
-      });
+      actualizarAsignatura(datosAsignatura);
     } else {
-      agregarAsignatura({
-        id: crypto.randomUUID(),
-        nombre,
-        codigo: codigo || undefined,
-        profesor: profesor || undefined,
-        color,
-        creditosSct: creditosSct !== '' ? Number(creditosSct) : 0,
-        horasTp: horasTp !== '' ? Number(horasTp) : 0,
-        horasTa: horasTa !== '' ? Number(horasTa) : 0,
-        bloques: bloquesMapeados,
-      });
+      agregarAsignatura(datosAsignatura);
     }
 
     onClose();
@@ -207,15 +230,19 @@ export function ModalAsignatura({
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">
-                Sala (Opcional)
+                Condicion
               </label>
-              <input
-                type="text"
-                placeholder="Ej: LABPIND / SALA 202"
-                value={bloquesForm[0]?.sala || ''}
-                onChange={(e) => actualizarBloqueForm(bloquesForm[0].id, 'sala', e.target.value)}
+              <select
+                value={condicion}
+                onChange={(e) => setCondicion(e.target.value as CondicionAsignatura)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-              />
+              >
+                {CONDICIONES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -288,7 +315,7 @@ export function ModalAsignatura({
               <button
                 type="button"
                 onClick={agregarNuevoBloque}
-                className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1"
+                className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
               >
                 + Agregar otro bloque
               </button>
@@ -312,14 +339,14 @@ export function ModalAsignatura({
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <div>
                     <select
                       value={b.dia}
                       onChange={(e) =>
                         actualizarBloqueForm(b.id, 'dia', e.target.value)
                       }
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                     >
                       {DIAS_SEMANA.map((d) => (
                         <option key={d} value={d}>
@@ -334,11 +361,26 @@ export function ModalAsignatura({
                       onChange={(e) =>
                         actualizarBloqueForm(b.id, 'bloqueHora', e.target.value)
                       }
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                     >
                       {BLOQUES_HORAS.map((hora) => (
                         <option key={hora} value={hora}>
                           {hora}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <select
+                      value={b.tipo}
+                      onChange={(e) =>
+                        actualizarBloqueForm(b.id, 'tipo', e.target.value)
+                      }
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    >
+                      {TIPOS_CLASE.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
                         </option>
                       ))}
                     </select>
@@ -361,7 +403,9 @@ export function ModalAsignatura({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-2">Color Distintivo</label>
+            <label className="block text-xs font-medium text-slate-400 mb-2">
+              Color Distintivo
+            </label>
             <div className="flex gap-2">
               {PALETA_COLORES.map((item) => (
                 <button
@@ -369,7 +413,9 @@ export function ModalAsignatura({
                   key={item.valor}
                   onClick={() => setColor(item.valor)}
                   className={`w-7 h-7 rounded-full ${item.bg} transition-transform ${
-                    color === item.valor ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'
+                    color === item.valor
+                      ? 'ring-2 ring-white scale-110'
+                      : 'opacity-70 hover:opacity-100'
                   }`}
                   title={item.etiqueta}
                 />
@@ -386,7 +432,9 @@ export function ModalAsignatura({
               >
                 Eliminar Asignatura
               </button>
-            ) : <div />}
+            ) : (
+              <div />
+            )}
 
             <div className="flex gap-2">
               <button
