@@ -73,7 +73,7 @@ export async function extraerTextoCompletoDePdf(archivo: File): Promise<string> 
     const pagina = await pdf.getPage(i);
     const contenido = await pagina.getTextContent();
     const textoPagina = contenido.items
-      .map((item) => ('str' in item ? item.str : ''))
+      .map((item: any) => ('str' in item ? item.str : ''))
       .join(' ');
     textoCompleto += `\n--- PAGINA ${i} ---\n${textoPagina}`;
   }
@@ -86,7 +86,6 @@ export async function procesarHorarioConIA(textoPdf: string): Promise<Asignatura
   const localKey = import.meta.env.VITE_GEMINI_API_KEY;
 
   try {
-    // 1. Intentar llamar al backend (Funciona en Vercel)
     const respuesta = await fetch('/api/analizar-horario', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -96,7 +95,6 @@ export async function procesarHorarioConIA(textoPdf: string): Promise<Asignatura
     if (respuesta.ok) {
       rawAsignaturas = await respuesta.json();
     } else if (localKey) {
-      // 2. Si falla en localhost (ej: error 404 porque no corre Vercel CLI), usa tu .env local
       rawAsignaturas = await procesarDirectoGemini(textoPdf, localKey);
     } else {
       const err = await respuesta.json().catch(() => ({}));
@@ -104,7 +102,6 @@ export async function procesarHorarioConIA(textoPdf: string): Promise<Asignatura
     }
   } catch (error: any) {
     if (localKey) {
-      // Respaldo en caso de error de red local
       rawAsignaturas = await procesarDirectoGemini(textoPdf, localKey);
     } else {
       throw new Error(error.message || 'Error al procesar el horario.');
@@ -113,7 +110,7 @@ export async function procesarHorarioConIA(textoPdf: string): Promise<Asignatura
 
   let colorIdx = 0;
 
-  return rawAsignaturas.map((item) => ({
+  return rawAsignaturas.map((item: any) => ({
     id: crypto.randomUUID(),
     nombre: item.nombre,
     codigo: item.codigo,
