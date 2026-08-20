@@ -39,6 +39,7 @@ interface HorarioState {
   eliminarPlan: (id: string) => void;
 
   agregarAsignatura: (asignatura: Asignatura) => void;
+  agregarMultiplesAsignaturas: (asignaturas: Asignatura[]) => void;
   actualizarAsignatura: (asignatura: Asignatura) => void;
   eliminarAsignatura: (id: string) => void;
 
@@ -135,6 +136,15 @@ export const useHorarioStore = create<HorarioState>()(
           planes: state.planes.map((p) =>
             p.id === state.planActivoId
               ? { ...p, asignaturas: [...p.asignaturas, asignatura] }
+              : p
+          ),
+        })),
+
+      agregarMultiplesAsignaturas: (nuevasAsignaturas) =>
+        set((state) => ({
+          planes: state.planes.map((p) =>
+            p.id === state.planActivoId
+              ? { ...p, asignaturas: [...p.asignaturas, ...nuevasAsignaturas] }
               : p
           ),
         })),

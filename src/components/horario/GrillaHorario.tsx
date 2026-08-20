@@ -3,6 +3,7 @@ import { DIAS_SEMANA, BLOQUES_HORAS } from '@/utils/constantes';
 import { TEMAS_PREDEFINIDOS } from '@/utils/temas';
 import { useHorarioStore } from '@/store/useHorarioStore';
 import { ModalAsignatura } from './ModalAsignatura';
+import { ModalImportarPdf } from './ModalImportarPdf';
 import type {
   ColorAsignatura,
   Asignatura,
@@ -44,6 +45,7 @@ export function GrillaHorario() {
   const limitesPorDia = planActivo.configGrilla?.limitePorDia || {};
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [asignaturaAEditar, setAsignaturaAEditar] = useState<Asignatura | null>(null);
   const [bloqueSeleccionado, setBloqueSeleccionado] = useState<{
     dia: DiaSemana;
@@ -244,7 +246,7 @@ export function GrillaHorario() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setMostrarConfigGrilla(!mostrarConfigGrilla)}
             className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors"
@@ -257,6 +259,29 @@ export function GrillaHorario() {
             className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors"
           >
             Temas y Colores
+          </button>
+
+          {/* BOTÓN: IMPORTAR PDF CON IA */}
+          <button
+            type="button"
+            onClick={() => setIsPdfModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-indigo-200 bg-gradient-to-r from-indigo-900/90 to-purple-900/90 hover:from-indigo-800 hover:to-purple-800 border border-indigo-500/50 rounded-lg transition-all shadow-md shadow-indigo-950/50 cursor-pointer"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-4 h-4 text-indigo-300 animate-pulse"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <span>Importar PDF (IA)</span>
           </button>
 
           <button
@@ -662,11 +687,18 @@ export function GrillaHorario() {
         +
       </button>
 
+      {/* MODAL MANUAL */}
       <ModalAsignatura
         isOpen={isModalOpen}
         onClose={cerrarModal}
         asignaturaEditar={asignaturaAEditar}
         bloqueInicial={bloqueSeleccionado}
+      />
+
+      {/* MODAL DE IMPORTAR PDF CON GEMINI IA */}
+      <ModalImportarPdf
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
       />
     </div>
   );
