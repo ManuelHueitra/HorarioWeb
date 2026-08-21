@@ -10,6 +10,8 @@ export type ColorAsignatura =
   | 'cyan';
 
 export type TipoBloque = 'Catedra' | 'Taller' | 'Laboratorio' | 'Ayudantia';
+export type TipoClase = TipoBloque;
+export type CondicionAsignatura = NonNullable<Asignatura['condicion']>;
 
 export interface BloqueHorario {
   id: string;
