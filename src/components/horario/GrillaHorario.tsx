@@ -3,6 +3,10 @@ import { DIAS_SEMANA, BLOQUES_HORAS } from '@/utils/constantes';
 import { TEMAS_PREDEFINIDOS } from '@/utils/temas';
 import { useHorarioStore } from '@/store/useHorarioStore';
 import { ModalAsignatura } from './ModalAsignatura';
+import { ModalImportarPdf } from './ModalImportarPdf';
+import { BotonExportar } from './BotonExportar';
+import { VistaHoy } from './VistaHoy';
+import { BotonInstalarApp } from '@/components/pwa/BotonInstalarApp';
 import type {
   ColorAsignatura,
   Asignatura,
@@ -38,12 +42,13 @@ export function GrillaHorario() {
   } = useHorarioStore();
 
   const planActivo = getPlanActivo();
-  const asignaturas = planActivo.asignaturas || [];
-  const temaActivo = planActivo.temaActivo || TEMAS_PREDEFINIDOS[0];
-  const nombreHorario = planActivo.nombre || 'Mi Horario';
-  const limitesPorDia = planActivo.configGrilla?.limitePorDia || {};
+  const asignaturas = planActivo?.asignaturas || [];
+  const temaActivo = planActivo?.temaActivo || TEMAS_PREDEFINIDOS[0];
+  const nombreHorario = planActivo?.nombre || 'Mi Horario';
+  const limitesPorDia = planActivo?.configGrilla?.limitePorDia || {};
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [asignaturaAEditar, setAsignaturaAEditar] = useState<Asignatura | null>(null);
   const [bloqueSeleccionado, setBloqueSeleccionado] = useState<{
     dia: DiaSemana;
@@ -63,13 +68,30 @@ export function GrillaHorario() {
     return h * 60 + m;
   };
 
-  const maxMinutosGlobal = Math.max(
-    ...DIAS_SEMANA.map((dia) => aMinutos(limitesPorDia[dia] || '18:15'))
-  );
+  // Recorte automático de filas vacías
+  let maxFinClaseMinutos = 0;
+  asignaturas.forEach((asig) => {
+    (asig.bloques || []).forEach((b) => {
+      const minFin = aMinutos(b.horaFin);
+      if (minFin > maxFinClaseMinutos) {
+        maxFinClaseMinutos = minFin;
+      }
+    });
+  });
+
+  const hayLimitesManuales = Object.keys(limitesPorDia).length > 0;
+  const maxManualMinutos = hayLimitesManuales
+    ? Math.max(...DIAS_SEMANA.map((dia) => aMinutos(limitesPorDia[dia] || '00:00')))
+    : 0;
+
+  const limiteCorte =
+    hayLimitesManuales && maxManualMinutos > 0
+      ? maxManualMinutos
+      : Math.max(maxFinClaseMinutos, aMinutos('13:15'));
 
   const bloquesVisibles = BLOQUES_HORAS.filter((b) => {
     const horaInicio = b.split(' - ')[0];
-    return aMinutos(horaInicio) < maxMinutosGlobal;
+    return aMinutos(horaInicio) < limiteCorte;
   });
 
   const abrirModalCrear = (dia?: DiaSemana, bloqueHora?: string) => {
@@ -114,6 +136,7 @@ export function GrillaHorario() {
       colorTitulo: temaActivo.colorTitulo,
       colorDias: temaActivo.colorDias,
       colorHoras: temaActivo.colorHoras,
+      fondo: temaActivo.fondo || '#090d16',
     };
 
     guardarTemaPersonalizado(nuevo);
@@ -156,15 +179,17 @@ export function GrillaHorario() {
               }`}
             >
               <button
+                type="button"
                 onClick={() => cambiarPlanActivo(plan.id)}
-                className="px-3 py-1.5"
+                className="px-3 py-1.5 cursor-pointer"
               >
                 {plan.nombre}
               </button>
               {planes.length > 1 && (
                 <button
+                  type="button"
                   onClick={() => eliminarPlan(plan.id)}
-                  className="pr-2 pl-1 py-1.5 text-slate-500 hover:text-rose-400 text-xs font-bold"
+                  className="pr-2 pl-1 py-1.5 text-slate-500 hover:text-rose-400 text-xs font-bold cursor-pointer"
                   title="Eliminar este plan"
                 >
                   x
@@ -174,21 +199,27 @@ export function GrillaHorario() {
           ))}
 
           <button
+            type="button"
             onClick={() => crearPlan(`Plan ${planes.length + 1}`)}
-            className="px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-lg text-xs font-medium transition-colors"
+            className="px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-lg text-xs font-medium transition-colors cursor-pointer"
           >
             + Nuevo Plan
           </button>
         </div>
 
         <button
+          type="button"
           onClick={duplicarPlanActivo}
-          className="text-xs text-slate-400 hover:text-slate-200 px-2.5 py-1.5 bg-slate-950 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors"
+          className="text-xs text-slate-400 hover:text-slate-200 px-2.5 py-1.5 bg-slate-950 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
         >
           Duplicar Plan Actual
         </button>
       </div>
 
+      {/* WIDGET AGENDA / ¿QUÉ ME TOCA HOY? */}
+      {planActivo && <VistaHoy planActivo={planActivo} />}
+
+      {/* Header Principal */}
       <header className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-4">
         <div>
           {editandoTitulo ? (
@@ -203,8 +234,9 @@ export function GrillaHorario() {
                 className="text-2xl font-bold bg-slate-900 border border-indigo-500 rounded px-2 py-0.5 text-slate-100 focus:outline-none"
               />
               <button
+                type="button"
                 onClick={guardarTitulo}
-                className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded"
+                className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded cursor-pointer"
               >
                 Listo
               </button>
@@ -244,65 +276,91 @@ export function GrillaHorario() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* ACCIONES SUPERIORES */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <BotonInstalarApp />
+
+          <BotonExportar
+            planActivo={planActivo}
+            idAreaExportable="area-horario-exportable"
+          />
+
           <button
-            onClick={() => setMostrarConfigGrilla(!mostrarConfigGrilla)}
-            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors"
+            type="button"
+            onClick={() => {
+              setMostrarConfigGrilla(!mostrarConfigGrilla);
+              setMostrarPersonalizar(false);
+            }}
+            className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors cursor-pointer ${
+              mostrarConfigGrilla
+                ? 'bg-indigo-600/30 border-indigo-500 text-white'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+            }`}
           >
-            Ajustar Horas por Dia
+            Ajustar Horas
           </button>
 
           <button
-            onClick={() => setMostrarPersonalizar(!mostrarPersonalizar)}
-            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors"
+            type="button"
+            onClick={() => {
+              setMostrarPersonalizar(!mostrarPersonalizar);
+              setMostrarConfigGrilla(false);
+            }}
+            className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors cursor-pointer ${
+              mostrarPersonalizar
+                ? 'bg-indigo-600/30 border-indigo-500 text-white'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+            }`}
           >
             Temas y Colores
           </button>
 
           <button
-            onClick={() => abrirModalCrear()}
-            className="hidden sm:flex px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-indigo-600/20 items-center gap-1"
+            type="button"
+            onClick={() => setIsPdfModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-indigo-200 bg-gradient-to-r from-indigo-900/90 to-purple-900/90 hover:from-indigo-800 hover:to-purple-800 border border-indigo-500/50 rounded-lg transition-all shadow-md shadow-indigo-950/50 cursor-pointer"
           >
-            <span>+</span> Agregar Asignatura
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-4 h-4 text-indigo-300 animate-pulse"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <span>Importar PDF (IA)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => abrirModalCrear()}
+            className="hidden sm:flex px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-indigo-600/20 items-center gap-1 cursor-pointer"
+          >
+            <span>+</span> Asignatura
           </button>
         </div>
       </header>
 
-      {/* Carga Academica */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-center">
-        <div className="p-2 bg-slate-950/50 rounded-lg border border-indigo-500/20">
-          <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-            Creditos SCT
-          </div>
-          <div className="text-lg font-bold text-indigo-400">{totalSct} SCT</div>
-        </div>
-        <div className="p-2 bg-slate-950/50 rounded-lg border border-emerald-500/20">
-          <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-            Presencial (TP)
-          </div>
-          <div className="text-lg font-bold text-emerald-400">{totalTp} hrs/sem</div>
-        </div>
-        <div className="p-2 bg-slate-950/50 rounded-lg border border-cyan-500/20">
-          <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-            Autonomo (TA)
-          </div>
-          <div className="text-lg font-bold text-cyan-400">{totalTa} hrs/sem</div>
-        </div>
-        <div className="p-2 bg-slate-950/50 rounded-lg border border-purple-500/20">
-          <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-            Carga Total
-          </div>
-          <div className="text-lg font-bold text-purple-400">
-            {totalHorasSemana} hrs/sem
-          </div>
-        </div>
-      </div>
-
-      {/* Panel de Ajuste de Horas por Dia */}
+      {/* PANELES SUPERIORES */}
       {mostrarConfigGrilla && (
-        <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3 shadow-xl">
-          <div className="text-xs font-semibold text-slate-200">
-            Hora de termino por dia:
+        <div className="p-4 bg-slate-900/95 border border-slate-800 rounded-xl space-y-3 shadow-2xl animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-200">
+              Hora de término manual por día:
+            </span>
+            <button
+              type="button"
+              onClick={() => setMostrarConfigGrilla(false)}
+              className="text-xs text-slate-500 hover:text-slate-300 cursor-pointer"
+            >
+              ✕ Cerrar
+            </button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {DIAS_SEMANA.map((dia) => (
@@ -311,7 +369,7 @@ export function GrillaHorario() {
                   {dia}:
                 </label>
                 <select
-                  value={limitesPorDia[dia] || '18:15'}
+                  value={limitesPorDia[dia] || '18:00'}
                   onChange={(e) => setLimiteDia(dia, e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                 >
@@ -327,42 +385,52 @@ export function GrillaHorario() {
         </div>
       )}
 
-      {/* Panel de Temas */}
       {mostrarPersonalizar && (
-        <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-4 text-xs text-slate-300 shadow-xl">
-          <div>
-            <span className="font-semibold text-slate-200 block mb-2">
-              Temas Predefinidos:
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {TEMAS_PREDEFINIDOS.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setTemaActivo(t)}
-                  className={`px-3 py-1.5 rounded-lg border transition-all flex items-center gap-2 ${
-                    temaActivo.id === t.id
-                      ? 'bg-indigo-600/30 border-indigo-500 text-white font-medium'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
-                  }`}
-                >
-                  <span className="flex gap-1">
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: t.colorTitulo }}
-                    />
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: t.colorDias }}
-                    />
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: t.colorHoras }}
-                    />
-                  </span>
-                  {t.nombre}
-                </button>
-              ))}
-            </div>
+        <div className="p-4 bg-slate-900/95 border border-slate-800 rounded-xl space-y-4 text-xs text-slate-300 shadow-2xl animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-slate-200">Temas Predefinidos:</span>
+            <button
+              type="button"
+              onClick={() => setMostrarPersonalizar(false)}
+              className="text-xs text-slate-500 hover:text-slate-300 cursor-pointer"
+            >
+              ✕ Cerrar
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {TEMAS_PREDEFINIDOS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTemaActivo(t)}
+                className={`px-3 py-1.5 rounded-lg border transition-all flex items-center gap-2 cursor-pointer ${
+                  temaActivo.id === t.id
+                    ? 'bg-indigo-600/30 border-indigo-500 text-white font-medium'
+                    : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <span className="flex gap-1">
+                  <span
+                    className="w-2 h-2 rounded-full border border-white/20"
+                    style={{ backgroundColor: t.fondo || '#090d16' }}
+                  />
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: t.colorTitulo }}
+                  />
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: t.colorDias }}
+                  />
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: t.colorHoras }}
+                  />
+                </span>
+                {t.nombre}
+              </button>
+            ))}
           </div>
 
           {temasPersonalizados.length > 0 && (
@@ -381,10 +449,15 @@ export function GrillaHorario() {
                     }`}
                   >
                     <button
+                      type="button"
                       onClick={() => setTemaActivo(t)}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 cursor-pointer"
                     >
                       <span className="flex gap-1">
+                        <span
+                          className="w-2 h-2 rounded-full border border-white/20"
+                          style={{ backgroundColor: t.fondo || '#090d16' }}
+                        />
                         <span
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: t.colorTitulo }}
@@ -401,8 +474,9 @@ export function GrillaHorario() {
                       {t.nombre}
                     </button>
                     <button
+                      type="button"
                       onClick={() => eliminarTemaPersonalizado(t.id)}
-                      className="text-rose-400 hover:text-rose-300 px-1 font-bold text-xs"
+                      className="text-rose-400 hover:text-rose-300 px-1 font-bold text-xs cursor-pointer"
                       title="Eliminar tema"
                     >
                       x
@@ -414,9 +488,25 @@ export function GrillaHorario() {
           )}
 
           <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-6">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <span className="font-medium text-slate-300">Titulo:</span>
+            <div className="flex flex-wrap items-center gap-5">
+              <label className="flex items-center gap-2 cursor-pointer bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800">
+                <span className="font-medium text-slate-300">Fondo:</span>
+                <input
+                  type="color"
+                  value={temaActivo.fondo || '#090d16'}
+                  onChange={(e) =>
+                    setTemaActivo({
+                      ...temaActivo,
+                      id: 'custom',
+                      fondo: e.target.value,
+                    })
+                  }
+                  className="w-6 h-6 bg-transparent rounded cursor-pointer border-0"
+                />
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800">
+                <span className="font-medium text-slate-300">Título:</span>
                 <input
                   type="color"
                   value={temaActivo.colorTitulo}
@@ -427,12 +517,12 @@ export function GrillaHorario() {
                       colorTitulo: e.target.value,
                     })
                   }
-                  className="w-7 h-7 bg-transparent rounded cursor-pointer border-0"
+                  className="w-6 h-6 bg-transparent rounded cursor-pointer border-0"
                 />
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer">
-                <span className="font-medium text-slate-300">Dias:</span>
+              <label className="flex items-center gap-2 cursor-pointer bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800">
+                <span className="font-medium text-slate-300">Días:</span>
                 <input
                   type="color"
                   value={temaActivo.colorDias}
@@ -443,11 +533,11 @@ export function GrillaHorario() {
                       colorDias: e.target.value,
                     })
                   }
-                  className="w-7 h-7 bg-transparent rounded cursor-pointer border-0"
+                  className="w-6 h-6 bg-transparent rounded cursor-pointer border-0"
                 />
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800">
                 <span className="font-medium text-slate-300">Horas:</span>
                 <input
                   type="color"
@@ -459,7 +549,7 @@ export function GrillaHorario() {
                       colorHoras: e.target.value,
                     })
                   }
-                  className="w-7 h-7 bg-transparent rounded cursor-pointer border-0"
+                  className="w-6 h-6 bg-transparent rounded cursor-pointer border-0"
                 />
               </label>
             </div>
@@ -477,186 +567,227 @@ export function GrillaHorario() {
               />
               <button
                 type="submit"
-                className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3 py-1 rounded-lg text-xs transition-colors"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3 py-1 rounded-lg text-xs transition-colors cursor-pointer"
               >
-                Guardar Tema
+                Guardar
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* Grilla Horaria */}
-      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/50 shadow-xl">
-        <table className="w-full border-collapse text-left text-sm text-slate-300">
-          <thead>
-            <tr className="border-b border-slate-800 bg-slate-950/80">
-              <th className="p-3 w-32 text-center font-semibold text-slate-400">
-                Bloque
-              </th>
-              {DIAS_SEMANA.map((dia) => (
-                <th
-                  key={dia}
-                  className="p-3 text-center font-semibold border-l border-slate-800/60 transition-colors"
-                  style={{ color: temaActivo.colorDias }}
-                >
-                  {dia}
+      {/* ÁREA EXPORTABLE */}
+      <div
+        id="area-horario-exportable"
+        className="space-y-4 p-4 rounded-2xl transition-colors duration-300"
+        style={{ backgroundColor: temaActivo.fondo || '#090d16' }}
+      >
+        {/* Carga Académica */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-center backdrop-blur-sm">
+          <div className="p-2 bg-slate-950/50 rounded-lg border border-indigo-500/20">
+            <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              Créditos SCT
+            </div>
+            <div className="text-lg font-bold text-indigo-400">{totalSct} SCT</div>
+          </div>
+          <div className="p-2 bg-slate-950/50 rounded-lg border border-emerald-500/20">
+            <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              Presencial (TP)
+            </div>
+            <div className="text-lg font-bold text-emerald-400">{totalTp} hrs/sem</div>
+          </div>
+          <div className="p-2 bg-slate-950/50 rounded-lg border border-cyan-500/20">
+            <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              Autónomo (TA)
+            </div>
+            <div className="text-lg font-bold text-cyan-400">{totalTa} hrs/sem</div>
+          </div>
+          <div className="p-2 bg-slate-950/50 rounded-lg border border-purple-500/20">
+            <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              Carga Total
+            </div>
+            <div className="text-lg font-bold text-purple-400">
+              {totalHorasSemana} hrs/sem
+            </div>
+          </div>
+        </div>
+
+        {/* Grilla Horaria */}
+        <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/50 shadow-xl">
+          <table className="w-full border-collapse text-left text-sm text-slate-300">
+            <thead>
+              <tr className="border-b border-slate-800 bg-slate-950/80">
+                <th className="p-3 w-32 text-center font-semibold text-slate-400">
+                  Bloque
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800/60">
-            {bloquesVisibles.map((horaBloque) => {
-              const [horaInicio, horaFin] = horaBloque.split(' - ');
-              const esAlmuerzo = horaInicio === '13:15';
-
-              return (
-                <tr
-                  key={horaBloque}
-                  className={`transition-colors ${
-                    esAlmuerzo ? 'bg-yellow-500/20 border-y-2 border-yellow-500/50' : 'hover:bg-slate-800/20'
-                  }`}
-                >
-                  <td
-                    className={`p-3 text-center text-xs font-mono transition-colors ${
-                      esAlmuerzo ? 'text-yellow-400 font-bold' : 'font-medium'
-                    }`}
-                    style={{ color: esAlmuerzo ? undefined : temaActivo.colorHoras }}
+                {DIAS_SEMANA.map((dia) => (
+                  <th
+                    key={dia}
+                    className="p-3 text-center font-semibold border-l border-slate-800/60 transition-colors"
+                    style={{ color: temaActivo.colorDias }}
                   >
-                    <div>{horaBloque}</div>
-                    {esAlmuerzo && (
-                      <div className="text-[10px] uppercase font-black tracking-wider text-yellow-400 mt-1 bg-yellow-500/20 rounded py-0.5">
-                        ALMUERZO
-                      </div>
-                    )}
-                  </td>
+                    {dia}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60">
+              {bloquesVisibles.map((horaBloque) => {
+                const [horaInicio, horaFin] = horaBloque.split(' - ');
+                const esAlmuerzo = horaInicio === '13:15';
 
-                  {DIAS_SEMANA.map((dia) => {
-                    const limiteDiaMinutos = aMinutos(limitesPorDia[dia] || '18:15');
-                    const horaFinBloqueMinutos = aMinutos(horaFin);
-                    const estaFueraDeRango = horaFinBloqueMinutos > limiteDiaMinutos;
+                return (
+                  <tr
+                    key={horaBloque}
+                    className={`transition-colors ${
+                      esAlmuerzo
+                        ? 'bg-yellow-500/20 border-y-2 border-yellow-500/50'
+                        : 'hover:bg-slate-800/20'
+                    }`}
+                  >
+                    <td
+                      className={`p-3 text-center text-xs font-mono transition-colors ${
+                        esAlmuerzo ? 'text-yellow-400 font-bold' : 'font-medium'
+                      }`}
+                      style={{ color: esAlmuerzo ? undefined : temaActivo.colorHoras }}
+                    >
+                      <div>{horaBloque}</div>
+                      {esAlmuerzo && (
+                        <div className="text-[10px] uppercase font-black tracking-wider text-yellow-400 mt-1 bg-yellow-500/20 rounded py-0.5">
+                          ALMUERZO
+                        </div>
+                      )}
+                    </td>
 
-                    if (estaFueraDeRango) {
+                    {DIAS_SEMANA.map((dia) => {
+                      const limiteDiaMinutos = aMinutos(limitesPorDia[dia] || '18:00');
+                      const horaFinBloqueMinutos = aMinutos(horaFin);
+                      const estaFueraDeRango =
+                        hayLimitesManuales && horaFinBloqueMinutos > limiteDiaMinutos;
+
+                      if (estaFueraDeRango) {
+                        return (
+                          <td
+                            key={`${dia}-${horaBloque}`}
+                            className="p-1 border-l border-slate-800/40 min-w-[150px] align-middle text-center bg-slate-950/40"
+                          >
+                            <span className="text-xs text-slate-600 select-none">
+                              —
+                            </span>
+                          </td>
+                        );
+                      }
+
+                      const ramosEncontrados = asignaturas.filter((ramo) =>
+                        (ramo.bloques || []).some(
+                          (b) => b.dia === dia && b.horaInicio === horaInicio
+                        )
+                      );
+
+                      const hayTope = ramosEncontrados.length > 1;
+
                       return (
                         <td
                           key={`${dia}-${horaBloque}`}
-                          className="p-1 border-l border-slate-800/40 min-w-[150px] align-middle text-center bg-slate-950/40"
+                          className={`p-1 border-l border-slate-800/60 min-w-[150px] align-top relative group transition-colors ${
+                            hayTope ? 'bg-rose-950/20 border-rose-500/40' : ''
+                          }`}
                         >
-                          <span className="text-xs text-slate-600 select-none">
-                            —
-                          </span>
-                        </td>
-                      );
-                    }
+                          {hayTope && (
+                            <div className="text-[10px] text-center font-bold text-rose-400 bg-rose-950/80 border border-rose-500/30 rounded py-0.5 mb-1">
+                              TOPE ({ramosEncontrados.length})
+                            </div>
+                          )}
 
-                    const ramosEncontrados = asignaturas.filter((ramo) =>
-                      ramo.bloques.some(
-                        (b) => b.dia === dia && b.horaInicio === horaInicio
-                      )
-                    );
+                          <div className="space-y-1">
+                            {ramosEncontrados.map((ramo) => {
+                              const bloque = (ramo.bloques || []).find(
+                                (b) => b.dia === dia && b.horaInicio === horaInicio
+                              );
 
-                    const hayTope = ramosEncontrados.length > 1;
+                              return (
+                                <button
+                                  type="button"
+                                  key={ramo.id}
+                                  onClick={() => abrirModalEditar(ramo)}
+                                  className={`w-full text-left p-2 rounded-lg border text-xs flex flex-col justify-between transition-all shadow-md cursor-pointer hover:brightness-110 active:scale-[0.98] ${
+                                    MAPA_COLORES[ramo.color]
+                                  }`}
+                                >
+                                  <div>
+                                    <div className="flex items-center justify-between gap-1">
+                                      <span className="font-semibold line-clamp-1">
+                                        {ramo.nombre}
+                                      </span>
+                                      {ramo.condicion && ramo.condicion !== 'Al día' && (
+                                        <span
+                                          className={`text-[9px] px-1 py-0.2 rounded border ${
+                                            ramo.condicion === 'Atrasado'
+                                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                              : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                          }`}
+                                        >
+                                          {ramo.condicion}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-[10px] opacity-75 font-mono">
+                                      {ramo.codigo && <span>{ramo.codigo}</span>}
+                                      {bloque?.tipo && (
+                                        <span className="text-slate-400">
+                                          • {bloque.tipo}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
 
-                    return (
-                      <td
-                        key={`${dia}-${horaBloque}`}
-                        className={`p-1 border-l border-slate-800/60 min-w-[150px] align-top relative group transition-colors ${
-                          hayTope ? 'bg-rose-950/20 border-rose-500/40' : ''
-                        }`}
-                      >
-                        {hayTope && (
-                          <div className="text-[10px] text-center font-bold text-rose-400 bg-rose-950/80 border border-rose-500/30 rounded py-0.5 mb-1">
-                            TOPE DE HORARIO ({ramosEncontrados.length})
-                          </div>
-                        )}
+                                  <div className="flex items-center justify-between mt-1 text-[10px] opacity-90">
+                                    {bloque?.sala ? (
+                                      <span className="font-medium bg-slate-950/80 px-1.5 py-0.5 rounded border border-white/10">
+                                        {bloque.sala}
+                                      </span>
+                                    ) : (
+                                      <span />
+                                    )}
+                                    <span className="text-[10px] opacity-50 hover:opacity-100">
+                                      Editar
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
 
-                        <div className="space-y-1">
-                          {ramosEncontrados.map((ramo) => {
-                            const bloque = ramo.bloques.find(
-                              (b) => b.dia === dia && b.horaInicio === horaInicio
-                            );
-
-                            return (
+                            {ramosEncontrados.length === 0 && (
                               <button
                                 type="button"
-                                key={ramo.id}
-                                onClick={() => abrirModalEditar(ramo)}
-                                className={`w-full text-left p-2 rounded-lg border text-xs flex flex-col justify-between transition-all shadow-md cursor-pointer hover:brightness-110 active:scale-[0.98] ${
-                                  MAPA_COLORES[ramo.color]
+                                onClick={() => abrirModalCrear(dia as DiaSemana, horaBloque)}
+                                className={`w-full h-16 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-800/40 border border-dashed flex items-center justify-center transition-all text-xs cursor-pointer ${
+                                  esAlmuerzo
+                                    ? 'border-yellow-500/50 text-yellow-400/80 hover:text-yellow-300'
+                                    : 'border-slate-700/50 text-slate-500 hover:text-indigo-400'
                                 }`}
+                                title={`Agregar ramo el ${dia} a las ${horaBloque}`}
                               >
-                                <div>
-                                  <div className="flex items-center justify-between gap-1">
-                                    <span className="font-semibold line-clamp-1">
-                                      {ramo.nombre}
-                                    </span>
-                                    {ramo.condicion && ramo.condicion !== 'Al día' && (
-                                      <span
-                                        className={`text-[9px] px-1 py-0.2 rounded border ${
-                                          ramo.condicion === 'Atrasado'
-                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                                        }`}
-                                      >
-                                        {ramo.condicion}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-[10px] opacity-75 font-mono">
-                                    {ramo.codigo && <span>{ramo.codigo}</span>}
-                                    {bloque?.tipo && (
-                                      <span className="text-slate-400">
-                                        • {bloque.tipo}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center justify-between mt-1 text-[10px] opacity-90">
-                                  {bloque?.sala ? (
-                                    <span className="font-medium bg-slate-950/80 px-1.5 py-0.5 rounded border border-white/10">
-                                      {bloque.sala}
-                                    </span>
-                                  ) : (
-                                    <span />
-                                  )}
-                                  <span className="text-[10px] opacity-50 hover:opacity-100">
-                                    Editar
-                                  </span>
-                                </div>
+                                +
                               </button>
-                            );
-                          })}
-
-                          {ramosEncontrados.length === 0 && (
-                            <button
-                              type="button"
-                              onClick={() => abrirModalCrear(dia as DiaSemana, horaBloque)}
-                              className={`w-full h-16 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-800/40 border border-dashed flex items-center justify-center transition-all text-xs ${
-                                esAlmuerzo
-                                  ? 'border-yellow-500/50 text-yellow-400/80 hover:text-yellow-300'
-                                  : 'border-slate-700/50 text-slate-500 hover:text-indigo-400'
-                              }`}
-                              title={`Agregar ramo el ${dia} a las ${horaBloque}`}
-                            >
-                              +
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Boton Flotante */}
+      {/* Botón Flotante Móvil */}
       <button
+        type="button"
         onClick={() => abrirModalCrear()}
-        className="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-2xl flex items-center justify-center text-3xl font-bold z-50 border-2 border-indigo-400/30 active:scale-95 transition-transform"
+        className="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-2xl flex items-center justify-center text-3xl font-bold z-50 border-2 border-indigo-400/30 active:scale-95 transition-transform cursor-pointer"
         aria-label="Agregar asignatura"
       >
         +
@@ -667,6 +798,11 @@ export function GrillaHorario() {
         onClose={cerrarModal}
         asignaturaEditar={asignaturaAEditar}
         bloqueInicial={bloqueSeleccionado}
+      />
+
+      <ModalImportarPdf
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
       />
     </div>
   );
