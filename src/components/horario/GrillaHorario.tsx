@@ -7,6 +7,8 @@ import { ModalImportarPdf } from './ModalImportarPdf';
 import { BotonExportar } from './BotonExportar';
 import { VistaHoy } from './VistaHoy';
 import { BotonInstalarApp } from '@/components/pwa/BotonInstalarApp';
+import { ModalCompartir } from './ModalCompartir.tsx';
+import { ModalImportarCompartido } from './ModalImportarCompartido';
 import type {
   ColorAsignatura,
   Asignatura,
@@ -49,6 +51,7 @@ export function GrillaHorario() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [isCompartirOpen, setIsCompartirOpen] = useState(false);
   const [asignaturaAEditar, setAsignaturaAEditar] = useState<Asignatura | null>(null);
   const [bloqueSeleccionado, setBloqueSeleccionado] = useState<{
     dia: DiaSemana;
@@ -279,6 +282,14 @@ export function GrillaHorario() {
         {/* ACCIONES SUPERIORES */}
         <div className="flex items-center gap-2 flex-wrap">
           <BotonInstalarApp />
+
+          <button
+            type="button"
+            onClick={() => setIsCompartirOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 transition-colors cursor-pointer"
+          >
+            <span>🔗</span> Compartir
+          </button>
 
           <BotonExportar
             planActivo={planActivo}
@@ -804,6 +815,16 @@ export function GrillaHorario() {
         isOpen={isPdfModalOpen}
         onClose={() => setIsPdfModalOpen(false)}
       />
+
+      {planActivo && (
+        <ModalCompartir
+          isOpen={isCompartirOpen}
+          onClose={() => setIsCompartirOpen(false)}
+          planActivo={planActivo}
+        />
+      )}
+
+      <ModalImportarCompartido />
     </div>
   );
 }

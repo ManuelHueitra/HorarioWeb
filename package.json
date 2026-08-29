@@ -12,7 +12,9 @@
   "dependencies": {
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
+    "lz-string": "^1.5.0",
     "pdfjs-dist": "^6.2.108",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "xlsx": "^0.18.5",
@@ -21,6 +23,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/lz-string": "^1.5.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
