@@ -12,6 +12,7 @@ interface Props {
 export function ModalCompartir({ isOpen, onClose, planActivo }: Props) {
   const [copiado, setCopiado] = useState(false);
 
+  // Genera la URL comprimida basada en el plan actual
   const urlCompartir = useMemo(() => {
     if (!planActivo) return '';
     const hash = comprimirPlanParaUrl(planActivo);
@@ -40,7 +41,7 @@ export function ModalCompartir({ isOpen, onClose, planActivo }: Props) {
           url: urlCompartir,
         });
       } catch (err) {
-        console.log('Compartir cancelado');
+        console.log('Compartir cancelado o no completado');
       }
     } else {
       handleCopiarEnlace();
@@ -50,6 +51,7 @@ export function ModalCompartir({ isOpen, onClose, planActivo }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl text-slate-200">
+        {/* Cabecera del modal */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2">
             <span className="text-lg">🔗</span>
@@ -69,17 +71,17 @@ export function ModalCompartir({ isOpen, onClose, planActivo }: Props) {
           <strong className="text-slate-200">"{planActivo.nombre}"</strong> con tus compañeros.
         </p>
 
-        {/* Código QR */}
+        {/* Código QR con level="L" para cuadros más grandes y escaneo rápido */}
         <div className="flex justify-center p-4 bg-white rounded-xl shadow-inner mx-auto w-fit">
           <QRCodeSVG
             value={urlCompartir}
-            size={180}
-            level="M"
+            size={210}
+            level="L"
             marginSize={2}
           />
         </div>
 
-        {/* Botones de acción */}
+        {/* Enlace y botones de acción */}
         <div className="space-y-2">
           <div className="flex items-center gap-1.5">
             <input
